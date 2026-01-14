@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "MySQL RDS Stack for E-Learning Platform"
+Parameters:
+  DBInstanceIdentifier:
+    Type: String
+    Default: elearningdb1
+    MinLength: '1'
+    MaxLength: '63'
+
+  DBInstanceClass:
+    Type: String
+    Default: db.t3.micro
+
+  DBAllocatedStorage:
+    Type: Number
+    Default: 20
+
+Resources:
+  RDSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: "Allow access from EC2/App tier to RDS"
+      VpcId: !ImportValue  ElearningVPCID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          SourceSecurityGroupId: !ImportValue AppStack-EC2SecurityGroupId
+      Tags:
+        - Key: Name
+          Value: "RDS-SG"
+
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: "Subnet group for RDS instance"
+      SubnetIds:
+        - !ImportValue Elearning-Private-Subnet-1
+        - !ImportValue Elearning-Private-Subnet-2
+      Tags:
+        - Key: Name
+          Value: "E-Learning-DB-SubnetGroup"
+
+  DBSecret:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Name: elearning/db/credentials
+      Description: Database credentials for E-learning platform
+      GenerateSecretString:
+        SecretStringTemplate: '{"username":"admin"}'
+        GenerateStringKey: password
+        PasswordLength: 16
+        ExcludeCharacters: '"@/\'
+      Tags:
+        - Key: Name
+          Value: Elearning-DB-Secret
+
+  ELearningDB:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBName: "elearningdb"
+      DBInstanceIdentifier: !Ref DBInstanceIdentifier
+      Engine: mysql
+      MasterUsername: !Sub "{{resolve:secretsmanager:${DBSecret}:SecretString:username}}"
+      MasterUserPassword: !Sub "{{resolve:secretsmanager:${DBSecret}:SecretString:password}}"
+      DBInstanceClass: !Ref DBInstanceClass
+      AllocatedStorage:  !Ref DBAllocatedStorage
+      PubliclyAccessible: false
+      MultiAZ: false
+      StorageType: gp3
+      VPCSecurityGroups:
+        - !Ref RDSSecurityGroup
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      DeletionProtection: false
+      BackupRetentionPeriod: 1
+      Tags:
+        - Key: Name
+          Value: "E-Learning-RDS"
+
+Outputs:
+  RDSInstanceEndpoint:
+    Description: "Database endpoint address"
+    Value: !GetAtt ELearningDB.Endpoint.Address
+    Export:
+      Name: ELearningDBEndpoint
+ 
+  RDSSecurityGroupId:
+    Description: "RDS security group ID"
+    Value: !Ref RDSSecurityGroup
+    Export:
+      Name: RDSSecurityGroupId
+
+  DBSecretArn:
+    Description: ARN of the database credentials secret
+    Value: !Ref DBSecret
+    Export:
+      Name: Elearning-DB-SecretArn
+
+
+
+
+
+
+
+
+
+
+
+
+
+
