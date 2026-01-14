@@ -1,0 +1,111 @@
+
+
+
+body {
+    background-color: rgb(68, 87, 96) !important;
+    margin: 0 auto;
+    max-width: 100%;
+    max-height:100%;
+    font-family: 'El Messiri', sans-serif;
+    font-size: 17px;
+    
+}
+
+
+nav{
+    font-family: 'Tajawal', sans-serif;
+    font-size: 17px;
+    
+}
+
+ul{
+    font-family: 'Tajawal', sans-serif;
+    font-size: 17px;
+    
+}
+
+footer{
+    font-family: 'Tajawal', sans-serif;
+    font-size: 17px;
+    
+    
+}
+.card-title{
+    font-family: 'Tajawal', sans-serif;
+    font-size: 24px;
+ 
+}
+
+.card-text{
+    font-family: 'Tajawal', sans-serif;
+    font-size: 24px;
+ 
+}
+
+ 
+
+img[alt="www.000webhost.com"]{display:none;}
+
+
+
+
+.alert{
+    font-family: 'Tajawal', sans-serif;
+    font-size: 17px;
+    border-radius:10px;
+    font-weight: 530;
+ 
+}
+
+.btn{
+    border-radius:80px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 14px;
+    font-weight: 530;
+    
+}
+
+
+.jumbotron{
+    border-radius:10px;
+    font-family: 'Tajawal', sans-serif;
+    font-weight: 530; 
+    
+} 
+
+.jumbotron img{
+    border-radius:10px;
+    border: 10px;
+    border-color: aliceblue;
+}
+
+.card{
+    border-radius:10px;
+    font-family: 'Tajawal', sans-serif;
+    font-size: 17px;
+    font-weight: 530;
+    
+}
+img {
+    animation: colorize 1s cubic-bezier(0, 0, .78, .36) 1;
+    border-radius:2px;
+    max-width: 100%;
+}
+
+    video {
+    animation: colorize 1s cubic-bezier(0, 0, .78, .36) 1;
+    border-radius:2px;
+    max-width: 100%;
+}
+
+@keyframes colorize {
+    0% {
+        -webkit-filter: grayscale(100%);
+        filter: grayscale(100%);
+    }
+    100% {
+        -webkit-filter: grayscale(0%);
+        filter: grayscale(0%);
+    }
+    
+}
