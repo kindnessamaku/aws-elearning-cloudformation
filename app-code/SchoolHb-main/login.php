@@ -18,20 +18,16 @@ $username_err = $password_err = "";
 // Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
  
-    // Check if username is empty
-    if(empty(trim($_POST["username"]))){
-        $username_err = "<font color=\"red\">Please enter username.</font>";
-    } else{
-        $username = trim($_POST["username"]);
-    }
-    
-    // Check if password is empty
-    if(empty(trim($_POST["password"]))){
-        $password_err = "<font color=\"red\">Please enter your password.</font>";
-    } else{
-        $password = trim($_POST["password"]);
-    }
-    
+$username = isset($_POST['username']) ? trim($_POST['username']) : '';
+$password = isset($_POST['password']) ? trim($_POST['password']) : '';
+
+ if(empty($username)){
+     $username_err = "<font color='red'>Please enter a username.</font>";
+ }
+ if(empty($password)){
+     $password_err = "<font color='red'>Please enter a password.</font>";
+ }
+
     // Validate credentials
     if(empty($username_err) && empty($password_err)){
         // Prepare a select statement

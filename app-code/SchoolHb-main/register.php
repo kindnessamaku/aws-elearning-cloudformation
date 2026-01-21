@@ -10,9 +10,9 @@ $username_err = $password_err = $confirm_password_err = "";
 if($_SERVER["REQUEST_METHOD"] == "POST"){
  
     // Validate username
-    if(empty(trim($_POST["username"]))){
-        $username_err = "<font color=\"red\">Please enter a username.</font>";
-    } else{
+    if(empty($username)){
+        $username_err = "<font color='red'>Please enter a username.</font>";
+    } else {
         // Prepare a select statement
         $sql = "SELECT id FROM users WHERE username = ?";
         
@@ -43,23 +43,18 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     }
     
     // Validate password
-    if(empty(trim($_POST["password"]))){
-        $password_err = "<font color=\"red\">Please enter a password.</font>";     
-    } elseif(strlen(trim($_POST["password"])) < 6){
-        $password_err = "<font color=\"red\">Password must have atleast 6 characters.</font>";
-    } else{
-        $password = trim($_POST["password"]);
+    if(empty($password)){
+        $password_err = "<font color='red'>Please enter a password.</font>";
+    } elseif(strlen($password) < 6){
+        $password_err = "<font color='red'>Password must have at least 6 characters.</font>";
     }
-    
-    // Validate confirm password
-    if(empty(trim($_POST["confirm_password"]))){
-        $confirm_password_err = "<font color=\"red\">Please confirm password.</font>";     
-    } else{
-        $confirm_password = trim($_POST["confirm_password"]);
-        if(empty($password_err) && ($password != $confirm_password)){
-            $confirm_password_err = "<font color=\"red\">Password did not match.</font>";
-        }
+   // Validate confirm password
+    if(empty($confirm_password)){
+        $confirm_password_err = "<font color='red'>Please confirm your password.</font>";
+    } elseif(empty($password_err) && ($password !== $confirm_password)){
+        $confirm_password_err = "<font color='red'>Passwords do not match.</font>";
     }
+
     
     // Check input errors before inserting in database
     if(empty($username_err) && empty($password_err) && empty($confirm_password_err)){

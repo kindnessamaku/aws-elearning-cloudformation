@@ -1,10 +1,19 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: Application Stack for E-learning Platform
 Parameters:
+  DBEndpoint:
+    Type: String
+    Description: "RDS endpoint imported from DB stack"
+
+  DBSecretARN:
+    Type: String
+    Description: "ARN of the RDS secret from Secrets Manager"
+
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Description: EC2 Key Pair for SSH access
     Default: ElearningKeyPair
+    
 Resources:
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -105,11 +114,20 @@ Resources:
         UserData:
           Fn::Base64: !Sub |
             #!/bin/bash
-            yum update -y
-            yum install -y httpd
+            set -e
+            yum -y update
+            yum install -y httpd php git
+            mkdir -p /var/www/html
+            chown -R ec2-user:ec2-user /var/www/html
+            cd /var/www/html
+            git clone https://github.com/kindnessamaku/aws-elearning-cloudformation.git 
+            cp -r aws-elearning-cloudformation/app-code/SchoolHb-main/* /var/www/html/
             systemctl enable httpd
             systemctl start httpd
-            echo "Welcome to the E-learning Platform!" > /var/www/html/index.html
+            curl -sS https://getcomposer.org/installer | php
+            php composer.phar require aws/aws-sdk-php
+            echo "export AWS_REGION=us-east-1" >> /etc/profile.d/aws.sh
+            echo "export RDS_ENDPOINT=${DBEndpoint}" >> /etc/profile.d/aws.sh
 
   AppAutoScalingGroup:
     Type: AWS::AutoScaling::AutoScalingGroup

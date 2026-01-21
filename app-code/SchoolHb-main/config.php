@@ -1,16 +1,29 @@
 <?php
-/* Database credentials. Assuming you are running MySQL
-server with default setting (user 'root' with no password) */
-define('DB_SERVER', 'fdb27.runhosting.com');
-define('DB_USERNAME', '3557575_hbou');
-define('DB_PASSWORD', 'allah@1#');
-define('DB_NAME', '3557575_hbou');
- 
-/* Attempt to connect to MySQL database */
-$link = mysqli_connect(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
- 
-// Check connection
-if($link === false){
-    die("ERROR: Could not connect. " . mysqli_connect_error());
+require '/var/www/html/vendor/autoload.php';
+
+use Aws\SecretsManager\SecretsManagerClient;
+
+$client = new SecretsManagerClient([
+    'region'  => getenv('AWS_REGION'),
+    'version' => 'latest'
+]);
+
+$secretName = getenv('RDS_SECRET_ARN');
+
+$result = $client->getSecretValue([
+    'SecretId' => $secretName,
+]);
+
+$secret = json_decode($result['SecretString'], true);
+
+$db_host = getenv('RDS_ENDPOINT');
+$db_user = $secret['username'];
+$db_pass = $secret['password'];
+$db_name = 'elearningdb';
+
+$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
+
+if ($conn->connect_error) {
+    die('Database connection failed');
 }
 ?>
