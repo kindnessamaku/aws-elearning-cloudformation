@@ -23,6 +23,14 @@ Parameters:
     Type: String
     Default: 10.0.4.0/24
 
+  DataSubnet1CIDR:
+    Type: String
+    Default: 10.0.5.0/24
+
+  DataSubnet2CIDR:
+    Type: String
+    Default: 10.0.6.0/24
+
 Resources:
   VPC:
     Type: AWS::EC2::VPC
@@ -90,6 +98,32 @@ Resources:
       Tags:
         - Key: Name
           Value: Elearning-Private-Subnet-2
+          
+  DBSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock:  DBSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref DataSubnet1CIDR
+      AvailabilityZone: !Select [0, !GetAZs '']
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: E-learning-Data-Subnet-1
+          
+  DBSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref DataSubnet2CIDR
+      AvailabilityZone: !Select [1, !GetAZs '']
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: E-learning-Data-Subnet-2
 
   EIP:
     Type: AWS::EC2::EIP
@@ -191,3 +225,16 @@ Outputs:
     Value: !Ref PrivateSubnet2
     Export:
       Name: Elearning-Private-Subnet-2
+      
+  DataSubnet1ID:
+    Description: ID of the Data Subnet 1
+    Value: !Ref DataSubnet1
+    Export:
+      Name: Elearning-Data-Subnet-1
+      
+  DataSubnet2ID:
+    Description: ID of the Data Subnet 2
+    Value: !Ref DataSubnet2
+    Export:
+      Name: Elearning-Data-Subnet-2
+  
