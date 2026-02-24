@@ -35,8 +35,8 @@ Resources:
     Properties:
       DBSubnetGroupDescription: "Subnet group for RDS instance"
       SubnetIds:
-        - !ImportValue Elearning-Private-Subnet-1
-        - !ImportValue Elearning-Private-Subnet-2
+        - !ImportValue DBSubnet1
+        - !ImportValue DBSubnet2
       Tags:
         - Key: Name
           Value: "E-Learning-DB-SubnetGroup"
