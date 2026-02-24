@@ -57,8 +57,15 @@ Resources:
             Principal:
               Service: ec2.amazonaws.com
             Action: sts:AssumeRole
+      Policies:
+        - PolicyName: "SecretsManagerAccess"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: "secretsmanager:GetSecretValue"
+                Resource: !Ref DBSecretARN 
       ManagedPolicyArns:
-      - arn:aws:iam::aws:policy/SecretsManagerReadWrite
       - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
 
   EC2InstanceProfile:
