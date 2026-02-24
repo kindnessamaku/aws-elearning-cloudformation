@@ -228,13 +228,13 @@ Outputs:
       
   DataSubnet1ID:
     Description: ID of the Data Subnet 1
-    Value: !Ref DataSubnet1
+    Value: !Ref DBSubnet1
     Export:
       Name: Elearning-Data-Subnet-1
       
   DataSubnet2ID:
     Description: ID of the Data Subnet 2
-    Value: !Ref DataSubnet2
+    Value: !Ref DBSubnet2
     Export:
       Name: Elearning-Data-Subnet-2
   
