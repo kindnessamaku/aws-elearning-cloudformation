@@ -6,28 +6,22 @@ This project demonstrates the deployment of an open-source e-learning platform o
  The primary goal of the project is to automate infrastructure provisioning, ensure repeatability, and design a highly available, scalable, and cost-effective cloud architecture.
 The entire environment — networking, compute, load balancing, and database — was provisioned declaratively using CloudFormation templates written in YAML, following cloud best practices.
 
-## AWS Services Used
-- **AWS CloudFormation** : CloudFormation was used to provision and manage all infrastructure components as code. This enables automated and repeatable deployments, version control of infrastructure and safe rollbacks when updates fail.
+## Key Features
+  - **Infrastructure Automation**
+    - **Version-controlled Architecture** : Infrastructure is managed as code, allowing for rapid disaster recovery, easy auditing, and seamless peer reviews.
+    - **Automated Provisioning** : Reduced deployment time from hours to minutes by utilizing nested stacks and cross-stack references.
+      
+ - **Security and Compliance**
+    - **Credential Hardening** : Integrated AWS Secrets Manager to eliminate hardcoded password.
+    - **Least Privilege Access** : Implemented IAM Roles/Instance Profiles for EC2, allowing the application to securely talk to Secrets Manager without the need for static, high-risk Access Keys.
+      
+- **Elasticity & Scalability**
+    - **Horizontal Scaling** : Configured an Auto Scaling Group (ASG) to dynamically adjust capacity based on real-time traffic demand, ensuring consistent performance during peak loads.
+    - **Intelligent Load Balancing** : An Application Load Balancer (ALB) serves as the single point of contact, distributing traffic only to healthy targets across multiple Availability Zones.
 
-
-- **Amazon VPC** : A custom Virtual Private Cloud was created to logically isolate the application and control network traffic.
-
-- **Internet Gateway (IGW)**: Acts as the bridge between the VPC and the public internet, allowing the Application Load Balancer to receive incoming user traffic.
-  
-- **NAT Gateway**: Sits in a public subnet to allow instances in private subnets (like our web and database servers) to securely download software patches and updates without being directly exposed to the internet.
-
-- **Elastic Load Balancer** (Application Load Balancer – ALB) : The ALB distributes incoming traffic across multiple EC2 instances and performs health checks to ensure availability.
-  
-- **Amazon EC2 & Auto Scaling Group** : EC2 instances host the application and are managed by an Auto Scaling Group to support scalability and fault tolerance.
-  
-- **Amazon RDS** : RDS was used as the managed relational database for the application, removing the overhead of manual database administration.
-  
-- **AWS Secrets Manager** : Secrets Manager securely stores database credentials instead of hardcoding them in application code or configuration files.
-  
-- **AWS Systems Manager (Session Manager)** : Session Manager provides secure, browser-based access to EC2 instances without requiring SSH access or public IP addresses.
-
-- **AWS IAM** : IAM roles were attached to EC2 instances to allow secure access to AWS services such as Secrets Manager, following the principle of least privilege.
-
+- **High Availability & Reliability**
+    - **Multi-AZ Fault Tolerance** : Architecture is distributed across multiple Availability Zones, ensuring that a single data center outage does not result in application downtime.
+    - **Managed Database Reliability** : Leveraged Amazon RDS for automated backups, patching, and simplified failover management.
 
 ## Prerequisites
 To deploy this project, ensure you have:
@@ -42,158 +36,106 @@ To deploy this project, ensure you have:
 
 ## Architecture Overview
 
-![reformed 3](https://github.com/user-attachments/assets/90a91956-9c1a-4ad2-9c0b-cd65f3353632)
-
-
-Deployment Steps
-Step 1: Infrastructure Provisioning with CloudFormation
-I created multiple CloudFormation templates to provision the infrastructure in a modular manner:
-Networking Stack
-A custom VPC with:
-
-
-Public subnets (for the ALB and NAT Gateway)
-
-
-Private subnets (for EC2 instances and RDS)
-
-
-Internet Gateway to allow outbound internet access
-
-
-NAT Gateway to enable private instances to access the internet securely
-
-
-Route tables to control traffic flow
-
-
-Why this matters:
- Private subnets protect application and database resources from direct internet exposure, improving security.
-
-Application Stack (Compute & Load Balancing)
-Application Load Balancer with health checks
-
-
-Security Groups to control inbound and outbound traffic
-
-
-Auto Scaling Group for EC2 instances
-
-
-IAM Role for EC2 to allow access to Secrets Manager and other AWS services
-
-
-Why these choices:
-The ALB improves availability by routing traffic only to healthy instances
-
-
-Auto Scaling supports elasticity and fault tolerance
-
-
-IAM roles eliminate the need for static credentials on EC2 instances
-
-
-During deployment, I mistakenly attempted to update the networking stack using the application template. CloudFormation detected that the update would break existing resources and triggered an UPDATE_ROLLBACK_COMPLETE state, reverting the stack to the last known good configuration.
- This demonstrated CloudFormation’s built-in safety and rollback mechanism.
-I corrected this by deploying the application stack separately, which completed successfully.
-
-Database Stack
-Amazon RDS deployed in private subnets
-
-
-Database credentials stored securely in AWS Secrets Manager
-
-
-Initially, the database stack failed due to an unsupported database engine version.
- Using DescribeStackEvents, I identified the root cause, updated the engine to a supported version, and successfully redeployed the stack.
-At this point, all three tiers — networking, application, and database — were fully operational.
-
-Step 2: Application Deployment and Troubleshooting
-User Data Script & Application Setup
-I cloned the application repository and configured the EC2 instances using a user data script.
- Key actions performed in the script included:
-export AWS_REGION=us-east-1
-export DB_ENDPOINT=<rds-endpoint>
-yum install -y httpd php php-mysqli git
-systemctl start httpd
-systemctl enable httpd
-
-The application code was placed under /var/www/html, which Apache uses as its web root.
-
-Troubleshooting 502 Bad Gateway
-When accessing the ALB DNS endpoint, I initially encountered a 502 Bad Gateway error.
- Upon checking the ALB target group, all targets were marked unhealthy, meaning the load balancer could not reach the application.
-Since the EC2 instances were in private subnets, I connected using AWS Systems Manager Session Manager.
-To inspect system logs, I ran:
-sudo tail -f /var/log/cloud-init-output.log
-
-From the logs, I identified multiple issues:
-dnf command not found (Amazon Linux 2 uses yum)
-
-
-Apache (httpd) was never installed or started
-
-
-/var/www/html directory did not exist
-
-
-The wrong repository (infrastructure repo instead of application repo) was being cloned
-
-
-I updated the user data script to:
-Replace dnf with yum
-
-
-Install and start Apache correctly
-
-
-Clone the correct application repository
-
-
-Ensure a valid index.php existed for ALB health checks
-
-
-After fixing these issues, the application homepage loaded successfully.
-
-Troubleshooting 504 Gateway Timeout
-When testing the login page, I encountered a 504 Gateway Timeout error.
- Using Session Manager again, I inspected Apache and PHP error logs:
-sudo tail -f /var/log/httpd/error_log
-
-The logs revealed PHP errors within the login script.
- After correcting the PHP issues and ensuring required PHP extensions were installed, the login and registration functionality worked as expected.
-At this stage, the application was fully functional.
-
-High Availability, Scalability, and Cost Optimization
-High Availability
-Multi-AZ architecture using public and private subnets
-
-
-Application Load Balancer routes traffic only to healthy targets
-
-
-Auto Scaling Group replaces failed instances automatically
-
-
-Scalability
-Auto Scaling dynamically adjusts EC2 capacity based on demand
-
-
-Stateless application design allows horizontal scaling
-
-
-Cost Effectiveness
-Use of managed services (RDS, ALB) reduces operational overhead
-
-
-Ability to delete and recreate infrastructure using CloudFormation avoids unnecessary costs
-
-
-No always-on resources required outside deployment or testing windows
-
-
-
-Conclusion
-This project demonstrates practical experience with AWS infrastructure design, Infrastructure as Code, troubleshooting production-like issues, and implementing cloud best practices.
- All infrastructure can be recreated or destroyed safely using CloudFormation, while the source code and templates remain version-controlled in GitHub.
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/b1cea774-81f6-4364-82db-344477f9e509" width="800" alt="AWS Architecture Diagram">
+</p>
+
+
+## Deployment Guide
+  - **Step 1: Clone the Project Repository** : Before deploying to AWS, pull the CloudFormation templates and application source code to your local environment.
+
+```
+   git clone https://github.com/kindnessamaku/aws-elearning-cloudformation.git
+   cd aws-elearning-cloudformation
+```
+
+ - **Step 2: **Infrastructure Provisioning (CloudFormation)**** :  Upload the **networking-stack.yaml**, the **app-stack.yaml** and then the **db-stack.yaml**. You will need to provide a DBPassword and DBUser. These are securely passed to AWS Secrets Manager.
+
+ - **Step 3: Automated Server Configuration (UserData)** : The EC2 instances are automatically configured at launch using a UserData script embedded in the CloudFormation template. This ensures the "Web Tier" is ready to serve traffic immediately upon boot.
+   - **What the script does** :
+
+    **Environment Preparation**: Updates packages and installs the Apache web server (httpd), PHP, and Git.
+   
+    **Source Code Management** : Clones the e-learning application code directly from GitHub into the /var/www/html directory.
+
+    **Dependency Injection** : Installs the aws-sdk-php via Composer to allow the app to communicate with AWS services.
+
+     **Dynamic Configuration** : Uses !Sub to inject the RDS Endpoint as an environment variable so the application knows exactly where the database is located.
+
+
+## Challenges & Key Lessons Learned
+
+1. **CloudFormation Stack Conflict & Rollback Management**
+    - Problem: I mistakenly attempted to update the existing Networking Stack using the Application Template. CloudFormation detected a logical mismatch that would have corrupted the underlying VPC resources.
+   - Result: The stack entered an **UPDATE_ROLLBACK_COMPLETE** state.
+Lesson Learned: This demonstrated the power of CloudFormation’s Safety Mechanism. It automatically reverted the infrastructure to the "Last Known Good" state, preventing a total environment outage.
+   - Resolution: I decoupled the templates and deployed the Application Tier as a separate, independent stack.
+  
+    <table>
+  <tr>
+    <td align="center">
+      <b>Stacks List</b><br>
+      <img src="https://github.com/user-attachments/assets/88f837b3-6bc3-48ac-9a48-3233509c4aa7" width="300" alt="Networking Outputs List">
+    </td>
+    <td align="center">
+      <b>Stacks List</b><br>
+      <img src="https://github.com/user-attachments/assets/3e8b51d5-276f-4691-9773-5bef0e842cf0" width="300" alt="Application Outputs List">
+    </td>
+    <td align="center">
+      <b>Stacks List</b><br>
+      <img src="https://github.com/user-attachments/assets/af130341-54a3-4b3e-88ec-82bfca055559" width="300" alt="CloudFormation Resource Map">
+    </td>
+  </tr>
+</table>
+
+ 
+2. **Resolving "502 Bad Gateway" (Unhealthy Targets)**
+   - Problem: After deployment, the Application Load Balancer (ALB) DNS returned a 502 Bad Gateway error. Upon inspection, all EC2 instances in the Target Group were marked Unhealthy.
+   - Troubleshooting: Since the instances were in Private Subnets, I couldn't use SSH. Instead, I used **AWS Systems Manager (SSM) Session Manager** to gain secure shell access.
+   - Investigation: I ran the following to inspect the boot logs :
+  ```
+ sudo tail -f /var/log/cloud-init-output.log
+```
+  
+   -  Finding: The UserData script had a syntax error that prevented the Apache (httpd) service from starting.
+   -  Resolution: I corrected the script, updated the Launch Template, and triggered an instance refresh. The targets passed health checks, and the homepage loaded successfully.
+
+<table>
+  <tr>
+    <td align="center">
+      <b>502 BadGateway</b><br>
+      <img src="https://github.com/user-attachments/assets/9462f4bc-cc30-460d-9c25-b8929921adee" width="450" alt="502 Bad Gateway">
+    </td>
+    <td align="center">
+      <b>Resolution</b><br>
+      <img src="https://github.com/user-attachments/assets/5b2d725b-1a30-456b-84cc-6a1de80650b5" width="450" alt="Successful Loading">
+    </td>
+  </tr>
+</table>
+
+3. **Debugging "504 Gateway Timeout" on Login**
+   - Problem: The homepage loaded, but attempting to log in triggered a 504 Gateway Timeout.
+   - Troubleshooting: A 504 error usually indicates a timeout between the Web Server and the Database (RDS).
+   - Investigation: I used SSM Session Manager again to tail the Apache and PHP error logs:
+   - Finding : The logs revealed PHP errors.
+   - Resolution : I ensured required PHP extensions were installed and then the login and registration functionality worked as expected.
+
+<table>
+  <tr>
+    <td align="center">
+      <b>504 Gateway Timeout</b><br>
+      <img src="https://github.com/user-attachments/assets/a183f2d9-ac58-401f-98be-a0f6c9524630" width="450" alt="504 Gateway Timeout">
+    </td>
+    <td align="center">
+      <b>Resolution</b><br>
+      <img src="https://github.com/user-attachments/assets/99521ce1-48ac-4887-919d-4f0e132d5755" width="450" alt="Loaded Successfully">
+    </td>
+  </tr>
+</table>
+
+## Key Achievements
+
+- **Operational Agility** : Reduced deployment time from hours to minutes using CloudFormation.
+- **Security Hardening** : Eliminated the need for SSH and public IPs by using SSM Session Manager.
+- **Resiliency** : Implemented a self-healing architecture that automatically recovers from instance failures.
 
